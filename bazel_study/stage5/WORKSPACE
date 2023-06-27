@@ -1,0 +1,6 @@
+#定义本地依赖库
+new_local_repository(
+    name = "eigen3",
+    path = "/mycode/bazel_study/examples-main/cpp-tutorial/eigen3",
+    build_file = "eigen3/BUILD",
+)
