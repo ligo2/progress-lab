@@ -252,12 +252,93 @@ void test8() {
     plib->Run();
 }
 
-int main() {
-    Lib* plib = new App();
-    plib->Run();
+class Stream{
+public:
+    virtual void Read(int number)=0; 
+    virtual ~Stream(){}
+};
 
-    return 0;
+//主体类
+class FileStream: public Stream{
+public:
+    virtual void Read(int number){
+        cout << "读文件流" << endl;
+    }
+};
+
+class NetworkStream :public Stream{
+public:
+    virtual void Read(int number){
+        cout << "读网络流" << endl;
+    }
+};
+
+//扩展操作
+// class CryptoStream{
+//     Stream* stream; 
+// public:
+//     CryptoStream(Stream* stm):stream(stm){}
+
+// public:
+//     void Read(int number){
+//         //额外的加密操作...
+//         stream->Read(number);
+        
+//     }
+// };
+
+class CryptoStream : public Stream{
+    Stream* stream; 
+public:
+    CryptoStream(Stream* stm):stream(stm){}
+
+public:
+    virtual void Read(int number){
+        //额外的加密操作...
+        stream->Read(number); 
+        
+    }
+};
+
+void test9() {
+    CryptoStream cps1(new FileStream);
+    cps1.Read(10);
+    CryptoStream cps2(new NetworkStream);
+    cps2.Read(10);
 }
+
+//单例--双检查
+class Singleton {
+private:
+    Singleton() {}
+    Singleton(const Singleton& singleton) = delete;
+public:
+    /*存在读写时reorder的问题，s_instance = new Singleton();这行代码理论上的三步：
+    1. 分配内存
+    2. 调用构造器对这块内存初始化
+    3. 返回内存的地址交给s_instance
+
+    但是很多编译器会对步骤进行优化，对上面步骤进行重排，可以是先将内存地址交给s_instance后再调用构造器
+    进行初始化，这样就会导致一个问题thread A在执行这几步时恰好是将地址交给s_instance但并未掉构造初始化，
+    thread B这时执行第一个if时，判断s_instace不为空就直接return了，这时候返回的对象并未初始化就会引发问题
+    */
+    Singleton* getInstace() {
+        if (s_instance == nullptr) {
+            //加锁 pthread_mutex_lock 
+            if (s_instance == nullptr)
+                s_instance = new Singleton();
+        }
+        return s_instance;
+    }
+
+private: 
+    static Singleton* s_instance;
+};
+Singleton* Singleton::s_instance = nullptr;//类外初始化
+
+
+
+
 int main() {
     // test1();
     // test2();
@@ -266,6 +347,8 @@ int main() {
     // test5();
     // test6();
     // test7();
-    test8();
+    // test8();
+    test9();
+
     return 0;
 }
