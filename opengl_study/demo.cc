@@ -492,6 +492,60 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <string>
+#include <exception>
+
+//从文件读取GLSL
+#include <fstream>
+
+struct ShaderSources {
+    std::string vertexrSources;
+    std::string fragmentSources;
+};
+ShaderSources ParseShader(const std::string& filePath) {
+    std::ifstream ifs(filePath);
+    std::string line;
+    enum class Type {
+        NONE = -1, VERTEX = 0, FRAGMENT = 1
+    };
+    Type type = Type::NONE;
+    ShaderSources ans;
+    while (std::getline(ifs, line)) {
+        if (line.find("#shader") != std::string::npos) {
+            if (line.find("Vertex") != std::string::npos) {
+                type = Type::VERTEX;
+            }else if (line.find("Fragment") != std::string::npos) {
+                type = Type::FRAGMENT;
+            }
+        } else {
+            //写入数据了
+            if (type == Type::VERTEX) {
+                ans.vertexrSources += line + '\n';
+            } else if (type == Type::FRAGMENT) {
+                ans.fragmentSources += line + '\n';
+            }
+        }
+    }
+
+    return ans;
+}
+
+
+//* glGetError使用示例
+static void GLClearError() {
+    while (glGetError() != GL_NO_ERROR);
+}
+
+static bool GLLogCall(const char* func, const char* file, int line) {
+    if (GLenum error = glGetError()) {//有错误则进入
+        std::cerr << "error:(" << error << " ) " << func << " " << file << " " << line << std::endl;
+        return false;
+    }
+    return true;
+}
+ //* x为oepngl的方法
+#define GLCall(x) GLClearError();\
+    x;\
+    assert(GLLogCall(#x,__FILE__,__LINE__));
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
@@ -542,7 +596,6 @@ static unsigned int CreateShader(const char* vertexShader, const char* fragmentS
     	// glGetProgramInfoLog(program, 512, nullptr, infoLog);
     	std::cerr << "Shader program validation failed\n" << "Error message: " << std::endl;
 	}
-
     glDeleteShader(vertex);
     glDeleteShader(fragment);
 
@@ -628,7 +681,7 @@ int main() {
     //-创建并初始化缓冲区对象的数据存储
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-	//使用索引
+	//使用索引，同样需要创建索引缓冲区
     unsigned int EBO;
     glGenBuffers(1, &EBO);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
@@ -638,26 +691,28 @@ int main() {
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
 	// 启用顶点属性数组
     glEnableVertexAttribArray(0);
-	const char *vertexShaderSource = "#version 330 core\n"
-	"layout (location = 0) in vec2 aPos;\n"
-	"void main()\n"
-	"{\n"
-	"   gl_Position = vec4(aPos.x, aPos.y, 0.0, 1.0);\n"
-	"}\n";
+	// const char *vertexShaderSource = "#version 330 core\n"
+	// "layout (location = 0) in vec2 aPos;\n"
+	// "void main()\n"
+	// "{\n"
+	// "   gl_Position = vec4(aPos.x, aPos.y, 0.0, 1.0);\n"
+	// "}\n";
 
-    const char* fragmentShaderSource =
-        "#version 330 core\n"
-        "layout (location = 0) out vec4 color;\n"
-        "uniform vec4 u_Color;\n"
-        "void main()\n"
-        "{\n"
-        "   color = u_Color;\n"
-        "}\n";
+    // const char* fragmentShaderSource =
+    //     "#version 330 core\n"
+    //     "layout (location = 0) out vec4 color;\n"
+    //     "uniform vec4 u_Color;\n"
+    //     "void main()\n"
+    //     "{\n"
+    //     "   color = u_Color;\n"
+    //     "}\n";
+    // int program = CreateShader(vertexShaderSource, fragmentShaderSource);
 
-    int program = CreateShader(vertexShaderSource, fragmentShaderSource);
+    ShaderSources sources = ParseShader("./shader.shader");
 
-	glUseProgram(program);//激活程序
-    //通过uniform修改颜色
+    int program = CreateShader(sources.vertexrSources.c_str(), sources.fragmentSources.c_str());
+    glUseProgram(program);  // 激活程序
+    // 通过uniform修改颜色
     int location = glGetUniformLocation(program, "u_Color");
     glUniform4f(location, 0.8f, 0.3f, 0.4f, 1.0f);
 
@@ -667,6 +722,8 @@ int main() {
         glClear(GL_COLOR_BUFFER_BIT);
         // glBindVertexArray(VBO);
         glUseProgram(program);           // 激活程序
+
+        // 渲染管线
         // glDrawArrays(GL_TRIANGLES, 0, 3);//三个顶点
         //glDrawArrays(GL_TRIANGLES, 0, 6);//正方形
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
