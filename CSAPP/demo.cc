@@ -33,7 +33,7 @@ void test_show_bytes(int val) {
 }
 
 void test1() {
-    printf("%d\n", sizeof(long int));  // 64位大小位8
+    printf("%ld\n", sizeof(long int));  // 64位大小位8
 
     int val = 1;
     if (*((char *)&val) == 1) {
@@ -223,12 +223,68 @@ void test7() {
 
     double val5 = 3.14;
     printf("val5=%.2lf\n", val5);
+
+//双精度定义正无穷、负无穷、零
+#define POS_INFINITY 1.0 / 0.0
+#define NEG_INFINITY -1.0 / 0.0
+#define NEG_ZERO 0.0
+
+    // double pos_infinity = POS_INFINITY;
+    double pos_infinity = pow(2, 1024);
+    double neg_infinity = NEG_INFINITY;
+    double zero = NEG_ZERO;
+
+    if (pos_infinity == INFINITY)
+        printf("是正无穷\n");
+    if (neg_infinity == -INFINITY)
+        printf("是负无穷\n");
+    if (zero == 0)
+        printf("是零\n");
+
+}
+
+
+
+
+// 作业2.60
+/**
+ * @brief 
+ * 将x的第i个字节（从0开始算），替换成b
+ * @param x 
+ * @param i 
+ * @param b 
+ * @return 最终被替换的值
+ */
+unsigned replace_byte(unsigned x, int i, unsigned char b) {
+    unsigned ans = x;
+    ((char *)&ans)[i] = b;
+    return ans;
+}
+
+void print(unsigned char* byte, int bytes) {
+    for (int i = 0; i < bytes;++i) {
+        printf("%.2x ", byte[i]);
+    }
+    printf("\n");
+}
+
+
+//作业2.62
+
+
+void test8() {
+    unsigned ret = replace_byte(0x12345678, 2, 0xAB);
+    print((unsigned char*)&ret, sizeof(ret));
+
+    ret = replace_byte(0x12345678, 0, 0xAB);
+    print((unsigned char*)&ret, sizeof(ret));
+
 }
 
 int main() {
     // test1();
     // test2();
-    test7();
+    test8();
 
     return 0;
 }
