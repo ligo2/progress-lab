@@ -280,11 +280,31 @@ void test8() {
     print((unsigned char*)&ret, sizeof(ret));
 
 }
+using std::cout;
+using std::endl;
+class T5Base
+{
+public:
+    T5Base() :value(55) {}
+    virtual ~T5Base() {}
+    void test1() { cout << "T5Base test1..." << endl; }
+protected:
+    int value;
+};
 
-int main() {
+class T5Derived : private T5Base {
+public:
+    using T5Base::test1;
+    //using T5Base::value;
+    void test2() { cout << "value is " << value << endl; }
+};
+int main()
+{
     // test1();
     // test2();
     test8();
-
+    T5Derived t;
+    t.test2();
+    t.test1();
     return 0;
 }
