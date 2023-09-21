@@ -23,11 +23,25 @@ public:
     }
 
     template <class InputIterator>
-    vector(InputIterator first, InputIterator last) {}
+    vector(InputIterator first, InputIterator last) 
+        :start(nullptr), finish(nullptr), end_of_storage(nullptr) {
+        InputIterator begin = first;
+        while (begin != last) {
+            push_back(*(begin++));
+        }
+    }
 
-    vector(const vector<T>& x) {
-        for (int i = 0; i < x.size();++i) {
+    vector(const vector<T>& x) 
+        : start(nullptr), finish(nullptr), end_of_storage(nullptr) {
+        for (int i = 0; i < x.size(); ++i) {
             push_back(x[i]);
+        }
+    }
+
+    ~vector() {
+        if (start) {
+            delete[] start;
+            start = finish = end_of_storage = nullptr;
         }
     }
     /**
@@ -46,6 +60,8 @@ public:
 
     size_t size() const { return finish - start; }
     size_t capacity() const { return end_of_storage - start; }
+
+    bool empty() const { return start == nullptr || start == finish; }
 
     /**
      * @brief 
@@ -117,8 +133,8 @@ public:
         *(finish++) = value;
     }
 
-    void pop_back() {
-        if (finish != nullptr) {
+    void pop_back() {        
+        if (start && finish!= start) {
             --finish;
         }
     }
@@ -131,10 +147,37 @@ public:
      * @return 
      */
     iterator insert (iterator position, const T& val) {
+        assert(begin() && position - begin() >= 0 && end() - position >= 0);
+        size_t pos = position - start;
+        if (finish == end_of_storage) {
+            reserve(capacity() == 0 ? 4 : capacity() * 2);
+        }
 
+        //position及后面元素集体后移
+        iterator start = end() - 1;
+        while (start != position) {
+            *(start + 1) = *start;
+            --start;
+        }
+        *(position + 1) = *position;
+        *position = val;
+        ++finish;
+        return begin() + pos;
     }
 
-    iterator erase (iterator position) {}
+    iterator erase (iterator position) {
+        assert(begin() && position - begin() >= 0 && end() - position > 0);
+
+        //position及后面元素集体前移
+        iterator begin = position + 1;
+        while (begin != end()) {
+            *(begin - 1) = *begin;
+            ++begin;
+        }
+        --finish;
+        return position;
+    }
+
 private:
     iterator start;     //指向第一个元素
     iterator finish;    //指向最后一个元素的下一个位置
@@ -157,8 +200,39 @@ void test1() {
 
 void test2() {
     vector<int> v1(10, 5);
+    for (auto& e : v1) {
+        std::cout << e << " ";
+    }
+    std::cout << std::endl;
+
     vector<int> v2(v1);
     for (auto& e : v2) {
+        std::cout << e << " ";
+    }
+    std::cout << std::endl;
+
+    vector<int> v3(v1.begin(), v1.end());
+    for (auto& e : v3) {
+        std::cout << e << " ";
+    }
+    std::cout << std::endl;
+
+    v3.insert(v3.begin() + 3, 2);
+    for (auto& e : v3) {
+        std::cout << e << " ";
+    }
+    std::cout << std::endl;
+
+    v3.erase(v3.begin() + 3);
+    for (auto& e : v3) {
+        std::cout << e << " ";
+    }
+    std::cout << std::endl;
+
+    while (!v3.empty()) {
+        v3.pop_back();
+    }
+    for (auto& e : v3) {
         std::cout << e << " ";
     }
     std::cout << std::endl;
@@ -203,19 +277,41 @@ void test1() {
 }
 
 void test2() {
-    std::vector<int> v1;
-    for (int i = 0; i < 40; ++i) {
-        v1.resize(i);
-        std::cout << "v1's size=" << v1.size() << std::endl;
-        std::cout << "v1's capacity=" << v1.capacity() << std::endl;
+    // std::vector<int> v1;
+    // for (int i = 0; i < 40; ++i) {
+    //     v1.resize(i);
+    //     std::cout << "v1's size=" << v1.size() << std::endl;
+    //     std::cout << "v1's capacity=" << v1.capacity() << std::endl;
+    // }
+    // v1.pop_back();
+
+    std::vector<int> v1{1, 2, 3, 4, 5, 6, 7, 8, 9};
+    // v1.insert(v1.end() + 10, 10);
+    // std::vector<int> v2;
+    // v1.insert(v2.begin(), 10);
+    // for (auto& e : v2) {
+    //     std::cout << e << " ";
+    // }
+    auto begin = v1.begin();
+    auto iterator = v1.erase(v1.begin());
+
+    v1.erase(iterator);
+    for (auto& e : v1) {
+        std::cout << e << " ";
     }
-    v1.pop_back();
+    std::cout << std::endl;
+
+    v1.erase(begin);
+    for (auto& e : v1) {
+        std::cout << e << " ";
+    }
+    std::cout << std::endl;
 }
 
 int main() {
-    // test2();
+    test2();
 
-    myVector::test2();
+    // myVector::test2();
 
     return 0;
 }
